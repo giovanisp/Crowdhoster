@@ -5,7 +5,7 @@
 
     <div class="well checkout_block" style="padding-bottom: 16px">
 
-        <form accept-charset="UTF-8" action="<%= checkout_process_path(@campaign) %>" method="post" id="payment_form">
+        <form accept-charset="UTF-8" action="<%= checkout_process_path(@campaign) %>" method="post" id="payment_form" data-error-action="<%= checkout_error_path(@campaign) %>" data-user-create-action="<%= ajax_create_payment_user_path(@campaign) %>">
 
           <input name="authenticity_token" type="hidden" value="<%= form_authenticity_token %>">
           <h4 class="contact">Contact Information</h4>
@@ -25,7 +25,7 @@
           <% end %>
           </fieldset>
 
-          <% if @campaign.collect_shipping %>
+          <% if (@campaign.payment_type == 'fixed' && @campaign.collect_shipping_flag) || (@reward && @reward.collect_shipping_flag) %>
           <h4>Shipping Address</h4>
 
           <fieldset>
@@ -71,11 +71,13 @@
             <div class="clearfix">
               <div class="card_number pull-left" style="margin-right:15px">
                 <label for="card_number">Card Number</label>
-                <input name="card_number" id="card_number" type="text" style="width:225px" autocomplete="off">
+                <input class="javascript-only" name="card_number" id="card_number" type="text" style="width:225px" autocomplete="off">
+                <noscript><input name="card_number" id="card_number" type="text" style="width:225px" autocomplete="off" disabled></noscript>
               </div>
               <div class="pull-left">
                 <label>Expiration</label>
-                <select id="expiration_month" style="width:118px">
+                <select class="javascript-only" id="expiration_month" style="width:118px">
+                <noscript></select><select id="expiration_month" style="width:118px" disabled></noscript>
                   <option value="01" selected>01</option>
                   <option value="02">02</option>
                   <option value="03">03</option>
@@ -89,8 +91,8 @@
                   <option value="11">11</option>
                   <option value="12">12</option>
                 </select>
-                <select id="expiration_year" style="width:118px">
-                  <option value="2013">2013</option>
+                <select class="javascript-only" id="expiration_year" style="width:118px">
+                <noscript></select><select id="expiration_year" style="width:118px" disabled></noscript>
                   <option value="2014" selected>2014</option>
                   <option value="2015">2015</option>
                   <option value="2016">2016</option>
@@ -109,11 +111,13 @@
               <div class="clearfix">
                 <div class="pull-left" style="margin-right: 15px;">
                   <label for="security_code">Security Code <i class="icon icon-question-sign show_tooltip" data-placement="top" data-title="3 or 4 digit number"></i></label>
-                  <input id="security_code" name="security_code" type="text"  style="width:225px" autocomplete="off">
+                  <input class="javascript-only" id="security_code" name="security_code" type="text"  style="width:225px" autocomplete="off">
+                  <noscript><input id="security_code" name="security_code" type="text"  style="width:225px" autocomplete="off" disabled></noscript>
                 </div>
                 <div class="billing_postal_code pull-left">
                   <label for="billing_postal_code">Billing Postal Code</label>
-                  <input id="billing_postal_code" name="billing_postal_code" type="text"  style="width:225px">
+                  <input class="javascript-only" id="billing_postal_code" name="billing_postal_code" type="text"  style="width:225px">
+                  <noscript><input id="billing_postal_code" name="billing_postal_code" type="text"  style="width:225px" disabled></noscript>
                 </div>
               </div>
             </fieldset>
@@ -121,7 +125,7 @@
           <label for="security_code" class="error" style="display: none"></label>
           <label for="billing_postal_code" class="error" style="display: none"></label>
 
-          <input id="ct_user_id" type="hidden" name="ct_user_id" value="<%= @campaign.production_flag ? @settings.ct_production_guest_id : @settings.ct_sandbox_guest_id %>" >
+          <input id="ct_user_id" type="hidden" name="ct_user_id" value="">
 
           <input id="quantity" type="hidden" name="quantity" value="<%= @quantity %>">
           <input id="amount" type="hidden" name="amount" value="<%= @amount %>">
@@ -133,23 +137,30 @@
             <div style="color: red; margin-top: 10px;">This campaign is in sandbox mode, your card will not actually be charged.</div>
           <% end%>
 
-          <div class="payment-submit">
-            <button class="btn btn-primary show_loader" type="submit" data-total="<%= number_with_precision(@total, precision: 2) %>" data-loader="payment_form">Confirm payment of $<%= number_with_precision(@total, precision: 2) %></button>
+          <div class="payment-submit javascript-only">
+            <button class="btn btn-primary show_loader" type="submit" data-total="<%= number_with_precision(@total, precision: 2) %>" data-loader="payment_form">
+              Confirm payment of $<%= number_with_precision(@total, :delimiter => ",", precision: 2) %>
+            </button>
             <span class="loader" data-loader="payment_form" style="display:none"></span>
             <div id="refresh-msg" style="display: none; color: red; margin-top: 10px">Your payment is being processed! Please do not refresh this page.</div>
           </div>
 
+          <noscript>
+            <style>.javascript-only { display:none !important; }</style>
+            <a class="btn disabled">You must enable JavaScript to submit your payment</a>
+          </noscript>
+
         </form>
         <div id="errors" style="display: none"></div>
 
-        <div style="text-align: right; margin-right: -16px"><%= image_tag 'crowdtilt_badge_no_card_logos.png', width: "120px", height: "36px" %></div>
+        <div style="text-align: right; margin-right: -16px"><%= image_tag 'powered_by_tilt.png', width: "104px", height: "36px" %></div>
     </div>
 
   </div>
 
     <div class="sidebar">
       <div class="crowdtilt-powered clearfix">
-        <%= image_tag 'crowdtilt_badge.png', width: "317px", height: "36px" %>
+        <%= image_tag 'tilt_badge.png' %>
       </div>
       <div class="well">
         <div class="clearfix">
@@ -162,24 +173,24 @@
           <tr>
           <td width="225">
           <% if @campaign.payment_type == "fixed" %>
-            <p>Subtotal (<%= "#{@quantity} x $#{number_with_precision(@campaign.fixed_payment_amount, precision: 2)}" %>)</p>
+            <p>Subtotal (<%= "#{@quantity} x #{short_price(@campaign.fixed_payment_amount, '$', 2)}" %>)</p>
           <% else %>
             <p>Subtotal</p>
           <% end %>
           </td>
-          <td style="text-align: right"><p>$<%= number_with_precision(@amount, precision: 2) %> </p></td>
+          <td style="text-align: right"><p><%= short_price(@amount, '$', 2) %></p></td>
           </tr>
 
           <% if @fee > 0 %>
           <tr>
           <td width="225"><p>Processing Fee</p></td>
-          <td style="text-align: right"><p>$<%= number_with_precision(@fee, precision: 2) %></p></td>
+          <td style="text-align: right"><p><%= short_price(@fee, '$', 2) %></p></td>
           </tr>
           <% end %>
 
           <tr>
           <td width="225"><p><strong>Total</strong></p></td>
-          <td style="text-align: right"><p><strong>$<%= number_with_precision(@total, precision: 2) %></strong></p></td>
+          <td style="text-align: right"><p><strong><%= short_price(@total, '$', 2) %></strong></p></td>
           </tr>
 
           <% if !@campaign.production_flag %>
@@ -196,7 +207,7 @@
       <div class="well rewards">
         <h4><%= @campaign.reward_reference.titleize %> Selected</h4>
         <% if @reward %>
-          <p><strong><%= "#{@reward.title} ($#{short_price(@reward.price)})" %></strong></p>
+          <p><strong><%= "#{@reward.title} (#{short_price(@reward.price, '$')})" %></strong></p>
           <p><%= @reward.description %></p>
           <p>Estimated Delivery: <%= @reward.delivery_date %></p>
         <% else %>
@@ -204,10 +215,6 @@
         <% end %>
       </div>
       <% end %>
-
-      <div class="custom_content">
-        <%= raw(@campaign.checkout_sidebar_content) %>
-      </div>
     </div>
 
   </div>

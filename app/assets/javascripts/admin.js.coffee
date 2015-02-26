@@ -1,18 +1,29 @@
 Crowdhoster.admin =
 
   init: ->
-
+    isSecurityCheckWarningDisplayed = false
     _this = this
 
     #
     # All admin pages
     #
 
-    $('a.advanced_toggle').on "click", (e) ->
-      e.preventDefault()
-      $('#advanced').slideToggle()
+    # Customization Form
+    $('#settings_custom_css').on "change", (e) ->
+      occ_msg = Crowdhoster.admin.checkSafety('settings_custom_css')
+      Crowdhoster.admin.checkSafetyAlert(occ_msg, 'settings_custom_css', 'settings_custom_css_alert')
+
+    $('#settings_custom_js').on "change", (e) ->
+      occ_msg = Crowdhoster.admin.checkSafety('settings_custom_js')
+      Crowdhoster.admin.checkSafetyAlert(occ_msg, 'settings_custom_js', 'settings_custom_js_alert')
 
     #  Campaign Form
+
+    $('legend.foldable').on 'click', (e) ->
+      $(this).parent().find('div.foldable').slideToggle()
+
+    # hide foldable divs, but only when javascript is enabled
+    $('div.foldable').not('.default_expanded').hide()
 
     $('#campaign_expiration_date').datetimepicker({
       timeFormat: "h:mm tt",
@@ -49,18 +60,28 @@ Crowdhoster.admin =
       $('#min-amount').slideUp()
       $('#no-rewards').slideUp()
       $('#rewards').slideDown()
+      $('#campaign_collect_shipping_message').hide()
+      $('#campaign_collect_shipping_warning').show()
+      $('#global-shipping-check').hide()
 
     $('input#campaign_payment_type_fixed').on "change", ->
       $('#min-amount').slideUp()
       $('#preset-amount').slideDown()
       $('#rewards').slideUp()
       $('#no-rewards').slideDown()
+      $('#global-shipping').slideDown()
+      $('#global-shipping-check').show()
+      $('#campaign_collect_shipping_message').show()
+      $('#campaign_collect_shipping_warning').hide()
 
     $('input#campaign_payment_type_min').on "change", ->
       $('#preset-amount').slideUp()
       $('#min-amount').slideDown()
       $('#no-rewards').slideUp()
       $('#rewards').slideDown()
+      $('#campaign_collect_shipping_message').hide()
+      $('#campaign_collect_shipping_warning').show()
+      $('#global-shipping-check').hide()
 
     $('input#goal_type_dollars').on "change", ->
       $('input#campaign_payment_type_min').attr('disabled', false)
@@ -79,7 +100,7 @@ Crowdhoster.admin =
 
     $('#reward-add').on 'click', (e) ->
       e.preventDefault()
-      $('#rewards ul').append('<li><table class="table"><tr><th>Reward</th><th>Number Claimed</th><th>Delete?</th></tr><tr><td><label>Minimum Contribution To Claim</label><div class="currency"><input name="reward[][price]" type="text" /><span style="position:absolute">$</span></div><label>Title</label><input name="reward[][title]" type="text" /><br/><label>Description</label><textarea name="reward[][description]"></textarea><br/><label>Estimated Delivery Date (i.e. May 2013)</label><input name="reward[][delivery_date]" type="text" /><br/><label>Number Available (leave blank if unlimited)</label><input name="reward[][number]" type="text" /></td><td>0</td><td><input type="checkbox" name="reward[][delete]" value="delete"/></td></tr></table></li>')
+      $('#rewards ul').append('<li><table class="table"><tr><th>Reward</th><th>Number Claimed</th><th>Delete?</th></tr><tr><td><label>Minimum Contribution To Claim</label><div class="currency"><input name="reward[][price]" type="text" /><span style="position:absolute">$</span></div><label>Title</label><input name="reward[][title]" type="text" /><br/><label>Image URL (optional)</label><input placeholder="http://www.host.com/image.jpg" name="reward[][image_url]" type="text" /><br/><label>Description</label><textarea name="reward[][description]"></textarea><br/><label>Estimated Delivery Date (i.e. May 2014)</label><input name="reward[][delivery_date]" type="text" /><br/><label>Number Available (leave blank if unlimited)</label><input name="reward[][number]" type="text" /><label>Collect shipping address for this reward?</label><input name="reward[][collect_shipping_flag]" type="checkbox" checked /></td><td>0</td><td><input type="checkbox" name="reward[][delete]" value="delete"/></td></tr></table></li>')
 
     $('.faq.sortable').sortable
       stop: (e, ui) ->
@@ -143,7 +164,7 @@ Crowdhoster.admin =
               backgroundColor: '#d9534f'
             }, 300, 'swing')
             setTimeout(() ->
-              alert('Sorry, this payment could not be refunded. These funds may have already been released to you. If you have any questions, please contact team@crowdhoster.com with the payment ID.')
+              alert('Sorry, this payment could not be refunded. These funds may have already been released to you. If you have any questions, please contact open@tilt.com with the payment ID.')
             , 300)
           )
           .always(() ->
@@ -151,6 +172,29 @@ Crowdhoster.admin =
           )
 
   # Custom Named Functions
+  checkSafety : (editor) ->
+    reg = new RegExp(/(\s*[:]*?[=]?\s*["]?\s*\b(http)\s*:\s*\/\/[a-zA-Z0-9+&@#\/%?=~_-|!,;:.~-]*)/g)
+    regDisp = new RegExp(/(\b(http)\s*:\s*\/\/[a-zA-Z0-9+&@#\/%?=~_-|!,;:.~-]*)/g)
+    str = $("#" + editor).val()
+    occ_msg = ""
+    while (result = reg.exec(str)) isnt null
+      occ_orig = str.split(result[1]).length - 1
+      occ_href = str.split("href" + result[1]).length - 1
+      if occ_orig isnt occ_href
+        occ_msg =  occ_msg + "<strong>" + result[1].match(regDisp) + "</strong><br />"
+    occ_msg
+
+  checkSafetyAlert : (occ_msg, element, alertElement) ->
+    if ( occ_msg != '' )
+        $('#' + alertElement).html('It looks you are trying to load external content using insecure (non-HTTPS) links. Unless you change the following links to be served over HTTPS, your contributors will see a security warning in their browser.<br />' + occ_msg + '<br />If you need any help with this, please contact open@tilt.com')
+        $('#' + alertElement).slideDown()
+        $('#' + element).addClass('text-area-border')
+        Crowdhoster.admin.isSecurityCheckWarningDisplayed = false
+      else
+        $('#' + alertElement).slideUp()
+        $('#' + element).removeClass('text-area-border')
+        if( Crowdhoster.admin.checkSafety('settings_custom_css') == '' )
+          $('#settings_custom_alert').hide();
 
   submitWebsiteForm: (form) ->
     form.submit()

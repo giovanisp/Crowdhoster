@@ -11,7 +11,7 @@
 #
 # It's strongly recommended to check this file into your version control system.
 
-ActiveRecord::Schema.define(:version => 20131206225359) do
+ActiveRecord::Schema.define(:version => 20140307205637) do
 
   create_table "campaigns", :force => true do |t|
     t.string   "name"
@@ -59,7 +59,7 @@ ActiveRecord::Schema.define(:version => 20131206225359) do
     t.boolean  "is_tilted"
     t.boolean  "is_paid"
     t.boolean  "published_flag",                       :default => false,        :null => false
-    t.boolean  "collect_shipping",                     :default => false,        :null => false
+    t.boolean  "collect_shipping_flag",                :default => false,        :null => false
     t.string   "goal_type",                            :default => "dollars",    :null => false
     t.float    "goal_dollars",                         :default => 1.0,          :null => false
     t.integer  "goal_orders",                          :default => 1,            :null => false
@@ -70,6 +70,7 @@ ActiveRecord::Schema.define(:version => 20131206225359) do
     t.string   "additional_info_label"
     t.boolean  "include_comments",                     :default => false,        :null => false
     t.string   "comments_shortname"
+    t.boolean  "include_rewards_claimed"
   end
 
   add_index "campaigns", ["slug"], :name => "index_campaigns_on_slug", :unique => true
@@ -112,8 +113,8 @@ ActiveRecord::Schema.define(:version => 20131206225359) do
     t.string   "card_expiration_month"
     t.string   "card_expiration_year"
     t.integer  "campaign_id"
-    t.datetime "created_at",                         :null => false
-    t.datetime "updated_at",                         :null => false
+    t.datetime "created_at",                                :null => false
+    t.datetime "updated_at",                                :null => false
     t.string   "address_one"
     t.string   "address_two"
     t.string   "city"
@@ -124,7 +125,12 @@ ActiveRecord::Schema.define(:version => 20131206225359) do
     t.integer  "reward_id"
     t.text     "additional_info"
     t.string   "billing_postal_code"
-    t.integer  "client_timestamp",      :limit => 8
+    t.integer  "client_timestamp",             :limit => 8
+    t.string   "ct_tokenize_request_id"
+    t.string   "ct_tokenize_request_error_id"
+    t.string   "ct_charge_request_id"
+    t.string   "ct_charge_request_error_id"
+    t.string   "ct_user_id"
   end
 
   create_table "rewards", :force => true do |t|
@@ -134,19 +140,22 @@ ActiveRecord::Schema.define(:version => 20131206225359) do
     t.integer  "number"
     t.float    "price"
     t.integer  "campaign_id"
-    t.datetime "created_at",                      :null => false
-    t.datetime "updated_at",                      :null => false
-    t.boolean  "visible_flag",  :default => true, :null => false
+    t.datetime "created_at",                              :null => false
+    t.datetime "updated_at",                              :null => false
+    t.boolean  "visible_flag",          :default => true, :null => false
+    t.string   "image_url"
+    t.boolean  "collect_shipping_flag", :default => true
+    t.boolean  "include_claimed"
   end
 
   create_table "settings", :force => true do |t|
-    t.string   "site_name",                   :default => "Crowdhoster",          :null => false
+    t.string   "site_name",                   :default => "Tilt Open",     :null => false
     t.string   "facebook_app_id"
     t.string   "tweet_text"
     t.string   "google_id"
-    t.datetime "created_at",                                                      :null => false
-    t.datetime "updated_at",                                                      :null => false
-    t.boolean  "initialized_flag",            :default => false,                  :null => false
+    t.datetime "created_at",                                               :null => false
+    t.datetime "updated_at",                                               :null => false
+    t.boolean  "initialized_flag",            :default => false,           :null => false
     t.string   "logo_image_file_name"
     t.string   "logo_image_content_type"
     t.integer  "logo_image_file_size"
@@ -167,7 +176,7 @@ ActiveRecord::Schema.define(:version => 20131206225359) do
     t.string   "ct_production_admin_id"
     t.string   "ct_production_guest_id"
     t.string   "api_key"
-    t.string   "reply_to_email",              :default => "team@crowdhoster.com", :null => false
+    t.string   "reply_to_email",              :default => "open@tilt.com", :null => false
     t.text     "custom_js"
     t.string   "mailgun_route_id"
     t.string   "ct_prod_api_key"

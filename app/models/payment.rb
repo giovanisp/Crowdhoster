@@ -2,13 +2,19 @@ class Payment < ActiveRecord::Base
   attr_accessible :ct_payment_id, :status, :amount, :user_fee_amount, :admin_fee_amount, :fullname, :email,
                   :card_type, :card_last_four, :card_expiration_month, :card_expiration_year, :billing_postal_code,
                   :address_one, :address_two, :city, :state, :postal_code, :country, :quantity,
-                  :additional_info, :client_timestamp
+                  :additional_info, :client_timestamp,
+                  :ct_charge_request_id, :ct_charge_request_error_id,
+                  :ct_tokenize_request_id, :ct_tokenize_request_error_id,
+                  :ct_user_id
 
   validates :fullname, :quantity, presence: true
   validates :email, presence: true, email: true
 
   belongs_to :campaign
   belongs_to :reward
+
+  scope :successful, where(status: %w(authorized charged released rejected offline))
+  scope :completed, where(status: %w(authorized charged released rejected refunded offline))
 
   def self.to_csv(options={})
     #db_columns = %w{fullname email quantity amount user_fee_amount created_at status ct_payment_id}

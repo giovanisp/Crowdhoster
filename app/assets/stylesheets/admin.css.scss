@@ -22,7 +22,7 @@
           box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.075);
   }
 
-  #admin_website, #admin_campaigns {
+  #admin_homepage, #admin_site_settings, #admin_customize, #admin_campaigns {
 
     fieldset {
       margin-bottom: 30px;
@@ -46,6 +46,11 @@
       .explanation.inline {
         float: none;
         width: 100%;
+      }
+
+      .explanation.message {
+        float: left;
+        width: 900px;
       }
 
       label {
@@ -101,6 +106,11 @@
             color: black;
             font-size: 14px;
             margin-bottom: 0px;
+            &.error {
+              color: #b94a48;
+              margin-bottom: 10px;
+              font-size: 14px;
+            }
           }
           table {
             margin-bottom: 0px;
@@ -148,7 +158,7 @@
         float: left;
         margin-right: 10px;
         input {
-          width: 350px;
+          width: 270px;
           margin: 0 2px 0px 0px;
         }
       }
@@ -213,22 +223,44 @@
   }
 }
 
-.admin-alert {
-  margin-top: 30px!important;
+.inline-alert{
+  text-shadow: none;
+  font-size: 12px;
+  text-align: left;
+  float: right;
+  clear: both;
+  width: 385px;
+  border: 1px solid #b94a48;
+  overflow: auto;
 }
 
-.admin-alert.alert.alert-success {
-  background: rgba(115, 211, 107, 1)!important;
+.box-alert{
   text-shadow: none;
+  text-align: left;
+  clear: both;
+  border: 1px solid #b94a48;
+  overflow: auto;
+  margin-bottom: 10px;
+}
+.text-area-border{
+  border: 1px solid red;
 }
 
-.admin-alert.alert.alert-notice {
-  background: rgba(211, 211, 136, 1)!important;
-  text-shadow: none;
+
+legend {
+  &.foldable {
+    &:hover {
+      cursor: pointer;
+    }
+  }
 }
 
-.admin-alert.alert.alert-error {
-  background: rgba(219, 94, 94, 1)!important;
-  color: white;
-  text-shadow: none;
+div {
+  .foldable {
+    display: block;
+  }
+}
+
+.reward_table {
+  display: none;
 }

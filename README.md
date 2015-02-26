@@ -1,43 +1,27 @@
-# Crowdhoster
+# Tilt Open
 
-![Crowdhoster index](https://s3.amazonaws.com/crowdhoster/github_assets/readmeScreenshot.png)
-
-"Launch your own crowdfunding site... without touching a line of code"
-
-But if you're here—well, maybe you want to touch some code.
+Launch your own advanced crowdfunding page.
 
 ---
 **Demo**
 
-You can play with a complete working demo at [demo.crowdhoster.com/admin](http://demo.crowdhoster.com/admin)
-
-Use these credentials to log in:
-
-email: demo@crowdhoster.com | password: crowdhoster
+You can play with a complete working demo at [open.tilt.com](http://open.tilt.com)
 
 **Quick Links:**
 
-"I want to launch my own campaign without touching any code."
+Want to launch your campaign without touching any code? [Head to the main tilt Open page](http://open.tilt.com).
 
-[Head to the main Crowdhoster page](http://crowdhoster.com).
-
-"I want help customizing my Crowdhoster page."
-
-[Check out this Crowdhoster setup guide](http://www.crowdhoster.com/setup).
-
-"I want to contact the Crowdhoster team."
-
-Email us directly: [team@crowdhoster.com](mailto:team@crowdhoster.com)
+Have questions? Email us directly: [open@tilt.com](mailto:open@tilt.com)
 
 ## Install
 
 ### Dependencies
-To run Crowdhoster you'll need the following prerequisites installed:
+To run Tilt Open you'll need the following prerequisites installed:
 
-* [Homebrew](http://mxcl.github.io/homebrew/) (for downloading software packages)
+* [Homebrew](http://brew.sh/) (for downloading software packages)
 
 ```
-$ ruby -e "$(curl -fsSL https://raw.github.com/mxcl/homebrew/go)"
+$ ruby -e "$(curl -fsSL https://raw.github.com/Homebrew/homebrew/go/install)"
 ```
 * [Git](http://git-scm.com/) (version control)
 
@@ -58,23 +42,29 @@ $ rvm use 1.9.3 --default
 $ brew install imagemagick
 ```
 
-### Service Providers
-To run Crowdhoster you'll also need to sign up for the following:
+* If you recently upgraded to OS X Mavericks (10.9) or got a new Mac computer and are having issues with the json gem during the bundle process, you may need to install the Command Line Developer Tools using the following command and clicking Install when prompted:
 
-* a [Balanced](https://www.balancedpayments.com/) account (test marketplace and live marketplace)
-* the [Crowdtilt API](https://www.crowdtilt.com/learn/developers) - Email [support.api@crowdtilt.com](mailto:support.api@crowdtilt.com?subject=API Key Request for Crowdhoster&body=Hi! I'd like to deploy a Crowdhoster app. The Github readme sent me here to ask for an API key. Thanks!) to get your API keys
-* [AWS](http://aws.amazon.com/s3/) (free) and set up a bucket for your assets. The bucket should be in the US Standard (us-east-1) zone.
-* [Mailgun](http://www.mailgun.com/) (free)
+```
+$ xcode-select --install
+```
+
+### Service Providers
+To run Tilt Open, you'll also need to do the following:
+
+* Email [support.api@tilt.com](mailto:support.api@tilt.com?subject=API Key Request for Tilt Open&body=Hi! I'd like to deploy a Tilt Open app. The Github readme sent me here to ask for an API key. Thanks!) to get your Tilt API keys
+* Create an [Amazon Web Services S3 account](http://aws.amazon.com/s3/) (free) and set up a bucket for your assets. The bucket should be in the US Standard (us-east-1) zone.
+* Sign up for [Mailgun](http://www.mailgun.com/) (free)
+* When you're ready to activate payments, sign up for a [Balanced Payments](https://www.balancedpayments.com/) account.
 
 ### Local Setup
 
 Get  started by:
 
-* Downloading a .zip of the [latest release](https://github.com/Crowdtilt/Crowdhoster/releases) to your local machine
+* Downloading a .zip of the [latest release](https://github.com/Crowdtilt/CrowdtiltOpen/releases) to your local machine
 
   or
- 
-* Creating a fork of Crowdhoster and cloning it to your local machine.
+
+* Creating a fork of Tilt Open and cloning it to your local machine.
 
 
 
@@ -92,15 +82,19 @@ $ cp .env.example .env
 ```
 
 
-Then open up the .env file and fill in the variables with your app_name and credentials. Leave ```ENABLE_ASSET_SYNC``` set to 'true' if you plan to use AWS to host your assets (recommended). The bucket for asset syncing should be in the US Standard (us-east-1) zone.
+Then open up the .env file and fill in the variables with your app_name and credentials. Leave `ENABLE_ASSET_SYNC` set to 'true' if you plan to use AWS to host your assets (recommended). The bucket for asset syncing should be in the US Standard (us-east-1) zone.
 
-The ```SECRET_TOKEN``` variable should be at least 30 characters and all random, no regular words or you'll be exposed to dictionary attacks.  You can generate a new one by running this command from the root of your project directory:
+Generate your `SECRET_TOKEN`  and `DEVISE_SECRET_KEY` by running the following command from the root of your project directory.
+
+Do NOT reuse the same secret token - you'll need to generate it twice.
 
 ```
-$ rake secret
+$ foreman run rake secret
 ```
 
-Important: Your ```APP_NAME``` must not have a space in it. Underscores and hypens are accepted.
+Important: Your `APP_NAME` must not have a space in it. Underscores and hypens are accepted.
+
+Your .env file should look something like this:
 
 ```
 APP_NAME=myawesomeapp
@@ -114,6 +108,7 @@ MAILGUN_DOMAIN=myawesomeapp.mailgun.org
 MAILGUN_PASSWORD=mailgunpassword
 MAILGUN_USERNAME=postmaster@myawesomeapp.mailgun.org
 SECRET_TOKEN=secrettoken
+DEVISE_SECRET_KEY=secrettoken
 ```
 
 Install the gems
@@ -141,6 +136,9 @@ Run the console
 $ foreman run rails c
 ```
 
+Visit your site at: [http://0.0.0.0:5000/](http://0.0.0.0:5000/)
+
+
 ### Deploying to Heroku
 
 1. [Sign up for a Heroku Account](https://www.heroku.com/)
@@ -152,19 +150,13 @@ Create a new Heroku app
 $ heroku create {APP NAME}
 ```
 
-Enable the use of environment variables during asset precompiling
-
-```
-$ heroku labs:enable user-env-compile
-```
-
 Install the Heroku config plugin if you don't already have it installed
 
 ```
 $ heroku plugins:install git://github.com/ddollar/heroku-config.git
 ```
 
-Push the configuration to Heroku.  
+Push the configuration to Heroku.
 NOTE: If you have already written config vars to Heroku, they will not be overwritten unless you pass the `--overwrite` flag as well.
 
 ```
@@ -189,21 +181,31 @@ Launch the app!
 $ heroku open
 ```
 
+(Optional) It is highly recommended to install the Papertrail addon to create searchable logs should you run into issues. The "choklad" level is free.
+
+```
+$ heroku addons:add papertrail:choklad
+```
+
 ## Contribute
 
-Looking to help make Crowdhoster better?
+Looking to help make Tilt Open better?
 
-Our feature development roadmap and bugs are inputted as issues. See a complete list by [clicking here](https://github.com/Crowdtilt/Crowdhoster/issues).
+Our feature development roadmap and bugs are inputted as issues. See a complete list by [clicking here](https://github.com/Crowdtilt/CrowdtiltOpen/issues).
 
-Contribute by forking the repo and working on a branch. Submit your changes via pull request. 
-
-A more complete contribution and style guide is coming soon!
+1. Fork it
+2. Create your feature branch (`git checkout -b my-new-feature`)
+3. Write your code
+4. Commit your changes (`git commit -am 'Add some feature'`)
+5. Push to the branch (`git push origin my-new-feature`)
+6. Create new pull request
+7. We'll send you a Tilt tshirt
 
 ## Contact and License
 
-Want to get in touch? Email [team@crowdhoster.com](mailto:team@crowdhoster.com).
+Want to get in touch? Email [open@tilt.com](mailto:open@tilt.com).
 
-#### MIT License. Copyright 2013 Crowdtilt.
+#### MIT License. Copyright 2014 Tilt.com.
 Permission is hereby granted, free of charge, to any person obtaining
 a copy of this software and associated documentation files (the
 "Software"), to deal in the Software without restriction, including
@@ -224,4 +226,4 @@ OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 ---
-Brought to you by the team at [Crowdtilt](http://crowdtilt.com) // Group fund anything
+Brought to you by the team at [Tilt](http://tilt.com) // Group fund anything

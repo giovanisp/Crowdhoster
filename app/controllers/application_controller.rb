@@ -5,7 +5,7 @@ class ApplicationController < ActionController::Base
   after_filter :store_location
 
   def load_settings
-    @settings = Settings.find_by_id(1)
+    @settings = Settings.first
 
     if !@settings
       @settings = Settings.create
@@ -27,8 +27,8 @@ class ApplicationController < ActionController::Base
 
   def verify_admin
     if !current_user.admin?
-      redirect_to root_url, :flash => { :notice => "You must be an admin to access that page" }
-   end
+      redirect_to root_url, :flash => { :error => "You must be an admin to access that page" }
+    end
   end
 
   def check_init
@@ -46,13 +46,6 @@ class ApplicationController < ActionController::Base
         # Create the Crowdtilt API Users
         begin
           Crowdtilt.sandbox
-          sandbox_guest = {
-            firstname: 'Crowdhoster',
-            lastname: (Rails.configuration.crowdhoster_app_name + '-guest'),
-            email: (Rails.configuration.crowdhoster_app_name + '-guest@crowdhoster.com')
-          }
-          sandbox_guest = Crowdtilt.post('/users', {user: sandbox_guest})
-
           sandbox_admin = {
             firstname: 'Crowdhoster',
             lastname: (Rails.configuration.crowdhoster_app_name + '-admin'),
@@ -62,26 +55,22 @@ class ApplicationController < ActionController::Base
         rescue => exception
           @settings.update_attribute :initialized_flag, false
           sign_out current_user
-          redirect_to new_user_registration_url, :flash => { :error => "An error occurred, please contact team@crowdhoster.com: #{exception.message}" }
+          redirect_to new_user_registration_url, :flash => { :error => "An error occurred, please contact open@tilt.com: #{exception.message}" }
           return
         else
-          @settings.update_attribute :ct_sandbox_guest_id, sandbox_guest['user']['id']
           @settings.update_attribute :ct_sandbox_admin_id, sandbox_admin['user']['id']
         end
 
 
         # Put user back on admin area
-        redirect_to admin_website_url, :flash => { :success => "Nice! Your app is now initialized." }
+        redirect_to admin_dashboard_url, :flash => { :signup_modal => true }
       else
-        redirect_to new_user_registration_url, :flash => { :error => "Please create an account below to initialize the app." }
+        if (User.count == 0)
+            redirect_to new_user_registration_url, :flash => { :info => "Please create an account below to initialize the app." }
+        else
+            redirect_to user_session_url , :flash => { :info => "Please sign in below." }
+        end
       end
     end
   end
-
-  def calculate_processing_fee(amount_cents)
-    amount_cents *= Rails.configuration.processing_fee_percentage.to_f / 100
-    amount_cents += Rails.configuration.processing_fee_flat_cents
-    return amount_cents.ceil
-  end
-
 end

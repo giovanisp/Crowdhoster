@@ -58,6 +58,11 @@
         text-align: center;
       }
 
+      .powered_by_crowdtilt {
+        text-align: center;
+        padding-bottom: 8px;
+      }
+
       .call_to_action_description {
         p, span {
           line-height: 1;
@@ -102,6 +107,27 @@
         padding-right: 23px;
         padding-left: 23px;
         text-align: left;
+        span {
+          color: #868686;
+          font-size: 18px;
+          margin-top: 5px;
+          display: block;
+          font-family: $primary_font, $secondary_font, $tertiary_font;
+        }
+      }
+
+      .stats-awards {
+        float: left;
+        width:70%;
+        margin: 0 auto;
+        color: #3f3f3f;
+        font-size: 24px;
+        display: block;
+        display: inline-block;
+        font-family: $primary_font, $secondary_font, $tertiary_font;
+        padding-right: 23px;
+        padding-left: 23px;
+        text-align: center;
         span {
           color: #868686;
           font-size: 18px;
@@ -246,6 +272,9 @@
               &.title {
                 font-size: 16px;
                 font-weight: bold;
+                margin-bottom: 12px;
+              }
+              &.image {
                 margin-bottom: 12px;
               }
               &.description {

@@ -1,7 +1,9 @@
 class Admin::CampaignsController < ApplicationController
+  include AdminMixin
   layout "admin"
   before_filter :authenticate_user!
   before_filter :verify_admin
+  before_filter { |c| c.create_breadcrumb ['Campaigns', admin_campaigns_path] }
 
   def index
     @campaigns = Campaign.order("created_at ASC")
@@ -9,11 +11,13 @@ class Admin::CampaignsController < ApplicationController
 
   def new
     @campaign = Campaign.new
+    create_breadcrumb(['New Campaign', new_admin_campaign_path])
   end
 
   def copy
     old_campaign = Campaign.find(params[:id])
     @campaign = old_campaign.dup
+    @campaign.expiration_date = Time.now + 30.days
     @campaign.published_flag = false
     @campaign.production_flag = false
 
@@ -28,7 +32,7 @@ class Admin::CampaignsController < ApplicationController
       Crowdtilt.sandbox
       response = Crowdtilt.post('/campaigns', {campaign: campaign})
     rescue => exception
-      redirect_to admin_campaigns, :flash => { :error => "An error occurred" }
+      redirect_to admin_campaigns, :flash => { :error => "Could not copy campaign" }
     else
       @campaign.update_api_data(response['campaign'])
       @campaign.save
@@ -42,10 +46,13 @@ class Admin::CampaignsController < ApplicationController
     # Completely refresh the rewards
     old_campaign.rewards.each do |reward|
       @campaign.rewards.create title: reward.title,
+                               image_url: reward.image_url,
                                description: reward.description,
                                delivery_date: reward.delivery_date,
                                number: reward.number,
-                               price: reward.price
+                               price: reward.price,
+                               collect_shipping_flag: reward.collect_shipping_flag,
+                               include_claimed: reward.include_claimed
     end
 
     render action: "edit"
@@ -55,13 +62,8 @@ class Admin::CampaignsController < ApplicationController
     is_default = params[:campaign].delete :is_default
     @campaign = Campaign.new(params[:campaign])
 
-    # Check if the new settings pass validations...if not, re-render form and display errors in flash msg
     if !@campaign.valid?
-      message = ''
-      @campaign.errors.each do |key, error|
-        message = message + key.to_s.humanize + ' ' + error.to_s + ', '
-      end
-      flash.now[:error] = message[0...-2]
+      flash.now[:error] = @campaign.errors.full_messages.join(', ')
       render action: "new"
       return
     end
@@ -107,21 +109,20 @@ class Admin::CampaignsController < ApplicationController
         params[:reward].each do |reward|
           unless reward['delete'] && reward['delete'] == 'delete'
               @campaign.rewards.create title: reward['title'],
+                                       image_url: reward['image_url'],
                                        description: reward['description'],
                                        delivery_date: reward['delivery_date'],
                                        number: reward['number'].to_i,
-                                       price: reward['price'].to_f
+                                       price: reward['price'].to_f,
+                                       collect_shipping_flag: reward['collect_shipping_flag'],
+                                       include_claimed: reward['include_claimed']
           end
         end
       end
 
       # Check again for campaign validity now that we've added faqs and rewards
       if !@campaign.valid?
-        message = ''
-        @campaign.errors.each do |key, error|
-          message = message + key.to_s.humanize + ' ' + error.to_s + ', '
-        end
-        flash.now[:error] = message[0...-2]
+        flash.now[:error] = @campaign.errors.full_messages.join(', ')
         render action: "new"
         return
       end
@@ -134,13 +135,14 @@ class Admin::CampaignsController < ApplicationController
       end
       @settings.save
 
-      redirect_to campaign_home_url(@campaign), :flash => { :notice => "Campaign updated!" }
+      redirect_to campaign_home_url(@campaign), :flash => { :success => "Campaign created!" }
       return
     end
   end
 
   def edit
     @campaign = Campaign.find(params[:id])
+    create_breadcrumb(['Edit Campaign', edit_admin_campaign_path(@campaign)])
   end
 
   def update
@@ -180,33 +182,34 @@ class Admin::CampaignsController < ApplicationController
           if reward['id']
               r = Reward.find(reward['id'])
               r.title = reward['title']
+              r.image_url = reward['image_url']
               r.description = reward['description']
               r.delivery_date = reward['delivery_date']
               r.number = reward['number'].to_i
               r.price = reward['price'].to_f
+              r.collect_shipping_flag = reward['collect_shipping_flag']
+              r.include_claimed = reward['include_claimed']
               unless r.save
-                flash.now[:error] = "Invalid rewards"
+                flash.now[:error] = "A reward field is missing or invalid"
                 render action: "edit"
                 return
               end
           else
             @campaign.rewards.create title: reward['title'],
+                                     image_url: reward['image_url'],
                                      description: reward['description'],
                                      delivery_date: reward['delivery_date'],
                                      number: reward['number'].to_i,
-                                     price: reward['price'].to_f
+                                     price: reward['price'].to_f,
+                                     collect_shipping_flag: reward['collect_shipping_flag'],
+                                     include_claimed: reward['include_claimed']
           end
         end
       end
     end
 
-    # Check if the new settings pass validations...if not, re-render form and display errors in flash msg
     if !@campaign.valid?
-      message = ''
-      @campaign.errors.each do |key, error|
-        message = message + key.to_s.humanize + ' ' + error.to_s + ', '
-      end
-      flash.now[:error] = message[0...-2]
+      flash.now[:error] = @campaign.errors.full_messages.join(', ')
       render action: "edit"
       return
     end
@@ -247,7 +250,7 @@ class Admin::CampaignsController < ApplicationController
     else
       @campaign.update_api_data(response['campaign'])
       @campaign.save
-      redirect_to campaign_home_url(@campaign), :flash => { :notice => "Campaign updated!" } and return
+      redirect_to campaign_home_url(@campaign), :flash => { :success => "Campaign updated!" } and return
     end
   end
 
@@ -282,13 +285,20 @@ class Admin::CampaignsController < ApplicationController
       if payment
         @payments = [payment]
       else
-        @payments = @campaign.payments_completed.order("created_at ASC")
+        @payments = @campaign.payments.completed.order("created_at ASC")
         flash.now[:error] = "Contributor not found for " + params[:payment_id]
       end
+    elsif params.has_key?(:email) && !params[:email].blank?
+      @payments = @campaign.payments.completed.where("lower(email) = ?", params[:email].downcase)
+      if @payments.blank?
+        @payments = @campaign.payments.completed.order("created_at ASC")
+        flash.now[:error] = "Contributor not found for " + params[:email]
+      end
     else
-      @payments = @campaign.payments_completed.order("created_at ASC")
+      @payments = @campaign.payments.completed.order("created_at ASC")
     end
 
+    create_breadcrumb(['Payments', admin_campaigns_payments_path(@campaign)])
     respond_to do |format|
       format.html
       format.csv { send_data @payments.to_csv, filename: "#{@campaign.name}.csv" }

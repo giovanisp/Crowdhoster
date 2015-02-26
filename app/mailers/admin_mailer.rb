@@ -2,6 +2,8 @@ class AdminMailer < ActionMailer::Base
   layout 'default_mailer'
   default from: "payments@crowdhoster.com"
 
+  helper :campaigns
+
   def payment_notification(payment_id)
     recipients = User
       .where(admin: true, wants_admin_payment_notification: true)
@@ -10,7 +12,7 @@ class AdminMailer < ActionMailer::Base
 
     if (recipients.length > 0)
       begin
-        @settings = Settings.find_by_id(1)
+        @settings = Settings.first
         @payment = Payment.find(payment_id)
       rescue ActiveRecord::RecordNotFound
         logger.error "Email failed - could not find Payment #{payment_id}"

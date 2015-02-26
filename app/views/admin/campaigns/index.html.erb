@@ -25,14 +25,14 @@
 
           <td>
             <% if campaign.goal_type == "dollars" %>
-              $<%= number_with_precision(campaign.goal_dollars.to_f, precision: 2) %>
+              <%= short_price(campaign.goal_dollars.to_f, '$', 2) %>
             <% else %>
               <%= campaign.goal_orders %>
             <% end %>
           </td>
           <td>
             <% if campaign.goal_type == "dollars" %>
-              $<%= number_with_precision(campaign.stats_raised_amount.to_f, precision: 2) %>
+              <%= short_price(campaign.stats_raised_amount.to_f, '$', 2) %>
             <% else %>
               <%= campaign.orders %>
             <% end %>
@@ -55,3 +55,29 @@
     </div>
   </div>
 </div>
+
+<% if flash[:signup_modal] %>
+<div class="modal hide fade" id="signupModal">
+  <div class="modal-header">
+    <a class="close" data-dismiss="modal">×</a>
+    <h3>Your page is almost ready!</h3>
+  </div>
+  <div class="modal-body">
+    <p>Start out by creating your first campaign.</p>
+    <p>If you have any questions as you get started, reach out to us: <a href="mailto:open@tilt.com?subject=I%20have%20questions%20about%20getting%20started%20with%20Tilt%20Open">open@tilt.com</a>.</p>
+  </div>
+  <div class="modal-footer">
+    <a href="#" class="btn" data-dismiss="modal">Close</a>
+    <a href="<%= new_admin_campaign_path %>" class="btn btn-primary">Start campaign!</a>
+  </div>
+</div>
+
+<% content_for :scripts do %>
+<script type="text/javascript">
+    $(window).load(function(){
+        $('#signupModal').modal('show');
+    });
+</script>
+<% end %>
+
+<% end %>
